@@ -43,10 +43,10 @@ jobs:
           docker login https://registry.bluhabit.id -u $DOCKER_USER -p $DOCKER_PASSWORD
 
       - name: Build Dev Image
-        run: docker build -t registry.bluhabit.id/uwang-rest-auth:dev-${{env.RELEASE_VERSION}} . -f ./dockerfile/dev.Dockerfile --no-cache
+        run: docker build -t registry.bluhabit.id/uwang-rest-stream:dev-${{env.RELEASE_VERSION}} . -f ./dockerfile/dev.Dockerfile --no-cache
 
       - name: Push Dev Image
-        run: docker push registry.bluhabit.id/uwang-rest-auth:dev-${{env.RELEASE_VERSION}}
+        run: docker push registry.bluhabit.id/uwang-rest-stream:dev-${{env.RELEASE_VERSION}}
       # Pushing release tag only if everything before passed
       - name: Push Dev Release Tag
         run: git push origin ${{env.RELEASE_VERSION}}
@@ -69,8 +69,8 @@ jobs:
           password: ${{secrets.SSH_PASSWORD}}
           port: ${{secrets.SSH_PORT}}
           script: |
-              cd vps-config/application/uwang-rest-auth/dev
-              docker stop uwang-rest-auth-dev
-              docker rm uwang-rest-auth-dev
-              docker pull registry.bluhabit.id/uwang-rest-auth:dev-${{env.RELEASE_VERSION}}
-              docker run --env-file .env -v ./data:/data:rw --network app-net --add-host "host.docker.internal:host-gateway" --name uwang-rest-auth-dev -p 7005:8000  -d registry.bluhabit.id/uwang-rest-auth:dev-${{env.RELEASE_VERSION}}
+              cd vps-config/application/uwang-rest-stream/dev
+              docker stop uwang-rest-stream-dev
+              docker rm uwang-rest-stream-dev
+              docker pull registry.bluhabit.id/uwang-rest-stream:dev-${{env.RELEASE_VERSION}}
+              docker run --env-file .env -v ./data:/data:rw --network app-net --add-host "host.docker.internal:host-gateway" --name uwang-rest-stream-dev -p 7015:8000  -d registry.bluhabit.id/uwang-rest-stream:dev-${{env.RELEASE_VERSION}}

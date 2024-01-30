@@ -43,10 +43,10 @@ jobs:
           docker login https://registry.bluhabit.id -u $DOCKER_USER -p $DOCKER_PASSWORD
 
       - name: Build Staging Image
-        run: docker build -t registry.bluhabit.id/uwang-rest-auth:staging-${{env.RELEASE_VERSION}} . -f ./dockerfile/staging.Dockerfile --no-cache
+        run: docker build -t registry.bluhabit.id/uwang-rest-stream:staging-${{env.RELEASE_VERSION}} . -f ./dockerfile/staging.Dockerfile --no-cache
 
       - name: Push Staging
-        run: docker push registry.bluhabit.id/uwang-rest-auth:staging-${{env.RELEASE_VERSION}}
+        run: docker push registry.bluhabit.id/uwang-rest-stream:staging-${{env.RELEASE_VERSION}}
       # Pushing release tag only if everything before passed
       - name: Push Staging Release Tag
         run: git push origin ${{env.RELEASE_VERSION}}
@@ -69,8 +69,8 @@ jobs:
           password: ${{secrets.SSH_PASSWORD}}
           port: ${{secrets.SSH_PORT}}
           script: |
-              cd vps-config/application/uwang-rest-auth/stage
-              docker stop uwang-rest-auth-staging
-              docker rm uwang-rest-auth-staging
-              docker pull registry.bluhabit.id/uwang-rest-auth:staging-${{env.RELEASE_VERSION}}
-              docker run --env-file .env -v ./data:/data:rw --network app-net --add-host "host.docker.internal:host-gateway" --name uwang-rest-auth-staging -p 7003:8000  -d registry.bluhabit.id/uwang-rest-auth:staging-${{env.RELEASE_VERSION}}
+              cd vps-config/application/uwang-rest-stream/stage
+              docker stop uwang-rest-stream-staging
+              docker rm uwang-rest-stream-staging
+              docker pull registry.bluhabit.id/uwang-rest-stream:staging-${{env.RELEASE_VERSION}}
+              docker run --env-file .env -v ./data:/data:rw --network app-net --add-host "host.docker.internal:host-gateway" --name uwang-rest-stream-staging -p 7014:8000  -d registry.bluhabit.id/uwang-rest-stream:staging-${{env.RELEASE_VERSION}}
