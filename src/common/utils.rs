@@ -1,14 +1,9 @@
-use redis::{Commands, Connection, RedisResult};
 use validator::ValidationErrors;
 
 use crate::common;
-use crate::common::constant::TTL_OTP_FORGOT_PASSWORD;
-use crate::common::jwt::encode;
-use crate::common::redis_ext::RedisUtil;
 use crate::common::response::ErrorResponse;
 use crate::entity::sea_orm_active_enums::{AuthProvider, UserStatus};
 use crate::entity::user_credential;
-use crate::models::auth::SessionRedisModel;
 
 pub fn get_readable_validation_message(
     err: Option<ValidationErrors>
@@ -65,45 +60,4 @@ pub fn create_session_redis_from_user(
         (common::constant::REDIS_KEY_FULL_NAME.to_string(), user.full_name),
         (common::constant::REDIS_KEY_TOKEN.to_string(), token),
     ];
-}
-
-pub fn create_session_from_user(
-    user: user_credential::Model,
-    token: String,
-) -> SessionRedisModel {
-    SessionRedisModel {
-        user_id: user.id.to_string(),
-        full_name: user.full_name.to_string(),
-        email: user.email.to_string(),
-        token,
-    }
-}
-
-pub async fn save_user_session_to_redis(
-    mut connection: Connection,
-    user: &user_credential::Model,
-) -> Result<SessionRedisModel, ErrorResponse> {
-    let redis_util = RedisUtil::new(&user.id.clone());
-    let redis_key = redis_util.create_key_session_sign_in();
-
-    let generate_token = encode(user.id.clone());
-    if generate_token.is_none() {
-        return Err(ErrorResponse::bad_request(400, "Gagal membuat sesi".to_string()));
-    }
-
-    let _: Result<String, redis::RedisError> = connection
-        .hset_multiple(
-            redis_key,
-            &*create_session_redis_from_user(
-                user.clone(),
-                generate_token
-                    .clone()
-                    .unwrap(),
-            ),
-        );
-
-    Ok(create_session_from_user(
-        user.to_owned(),
-        generate_token.unwrap(),
-    ))
 }

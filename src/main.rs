@@ -6,19 +6,13 @@ use actix_web::{App, http, HttpResponse, HttpServer, middleware, web};
 use actix_web::error::InternalError;
 use actix_web::http::StatusCode;
 use actix_web::web::Data;
-use chrono::Locale;
 use dotenv::dotenv;
 use redis::Client;
 use sea_orm::{Database, DatabaseConnection};
 
-use crate::common::mail::email::Email;
 use crate::common::response::ErrorResponse;
 use crate::common::sse::sse_emitter::SseBroadcaster;
-use crate::routes::auth::forgot_password::{forgot_password, set_new_password, verify_otp_forgot_password};
-use crate::routes::auth::sign_in::{resend_otp_sign_in_basic, sign_in_basic, sign_in_google, verify_otp_sign_in_basic};
-use crate::routes::auth::sign_up::{complete_profile_sign_up, resend_otp_sign_up_basic, set_password_sign_up, sign_up_basic, verify_otp_sign_up_basic};
 use crate::routes::index::hello;
-use crate::routes::user::user::complete_profile;
 
 mod common;
 
@@ -114,52 +108,12 @@ async fn main() -> std::io::Result<()> {
 
 pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.route("/", web::get().to(hello));
-    cfg.route("/email", web::get().to(index));
-    cfg.service(
-        web::scope("/v1")
-            .route("/sign-up-basic", web::post().to(sign_up_basic))
-            .route("/sign-up-basic/verify-otp", web::post().to(verify_otp_sign_up_basic))
-            .route("/sign-up-basic/resend-otp", web::post().to(resend_otp_sign_up_basic))
-            .route("/sign-up-basic/complete-profile", web::post().to(complete_profile_sign_up))
-            .route("/sign-up-basic/set-password", web::post().to(set_password_sign_up))
-
-            .route("/sign-in-basic", web::post().to(sign_in_basic))
-            .route("/sign-in-basic/verify-otp", web::post().to(verify_otp_sign_in_basic))
-            .route("/sign-in-basic/resend-otp", web::post().to(resend_otp_sign_in_basic))
-            .route("/sign-in-google", web::post().to(sign_in_google))
-
-            .route("/forgot-password", web::post().to(forgot_password))
-            .route("/forgot-password/verify-otp", web::post().to(verify_otp_forgot_password))
-            .route("/forgot-password/set-password", web::post().to(set_new_password))
-    );
-
-    routes::event_stream::event_stream_handler(cfg)
+    cfg
+        .service(
+            web::scope("/v1")
+                .route("/event/subscribe", web::get().to(routes::event_stream::register_event))
+                .route("/event/send", web::post().to(routes::event_stream::send))
+                .route("/event/broadcast", web::post().to(routes::event_stream::broadcast))
+        );
 }
 
-pub async fn index(
-    _: Data<AppState>
-) -> HttpResponse {
-    let mut mail = Email::new("triandamai@gmail.com".to_string(), "Trian".to_string());
-
-    let current_date = chrono::Utc::now().format_localized("%A, %d %B %Y %r",Locale::id_ID);
-    let formatted_date = format!("{}",current_date);
-    // mail.send_otp_sign_up_basic(serde_json::json!({
-    //     "otp":"1234"
-    // })).await.unwrap();
-    mail.send_otp_sign_in_basic(serde_json::json!({
-        "otp":"1234"
-    })).await.unwrap();
-    // mail.send_otp_forgot_password(serde_json::json!({
-    //     "otp":"1234"
-    // })).await.unwrap();
-    // mail.send_welcoming_user(serde_json::json!({
-    //     "subject":"Selamat bergabung di Uwang!"
-    // })).await.unwrap();
-    // mail.send_otp_fraud_activity(serde_json::json!({
-    //     "subject":"Aktivitas Mencurigakan Pada Akun Anda",
-    //     "name":"Trian",
-    //     "date":formatted_date
-    // })).await.unwrap();
-
-    HttpResponse::Ok().body(format!("{}",current_date))
-}
