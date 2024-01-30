@@ -4,10 +4,9 @@ use actix_web::web::Json;
 use validator::Validate;
 use crate::AppState;
 use crate::common::response::{BaseResponse, ErrorResponse};
-use crate::common::otp_generator::generate_otp;
 use crate::models::event::SendEventRequest;
 
-async fn register_event(
+pub(crate) async fn register_event(
     state: web::Data<AppState>,
     req: HttpRequest,
 ) -> impl Responder {
@@ -23,7 +22,7 @@ async fn register_event(
     return state.sse_emitter.new_client(id).await;
 }
 
-async fn send(
+pub(crate) async fn send(
     state: web::Data<AppState>,
     body: web::Json<SendEventRequest>,
 ) -> WebResult<impl Responder, ErrorResponse> {
@@ -56,11 +55,11 @@ async fn send(
     )));
 }
 
-async fn broadcast(
+pub(crate) async fn broadcast(
     state: web::Data<AppState>,
     body: Json<SendEventRequest>,
 ) -> WebResult<impl Responder, ErrorResponse> {
-    let generate = generate_otp();
+    let generate = "1234";
     let validate = body.validate();
 
     if validate.is_err() {
@@ -87,14 +86,4 @@ async fn broadcast(
         Some(body),
         "".to_string(),
     )));
-}
-
-pub fn event_stream_handler(cfg: &mut web::ServiceConfig) {
-    cfg
-        .service(
-            web::scope("/event")
-                .route("/subscribe", web::get().to(register_event))
-                .route("/send", web::post().to(send))
-                .route("/broadcast", web::post().to(broadcast))
-        );
 }

@@ -1,5 +1,6 @@
 use std::string::ToString;
 use std::sync::Arc;
+
 use actix_cors::Cors;
 use actix_web::{App, http, HttpResponse, HttpServer, middleware, web};
 use actix_web::error::InternalError;
@@ -11,6 +12,7 @@ use sea_orm::{Database, DatabaseConnection};
 
 use crate::common::response::ErrorResponse;
 use crate::common::sse::sse_emitter::SseBroadcaster;
+use crate::routes::index::hello;
 
 mod common;
 
@@ -25,7 +27,7 @@ mod routes;
 pub struct AppState {
     db: DatabaseConnection,
     cache: Client,
-    sse_emitter:Arc<SseBroadcaster>
+    sse_emitter: Arc<SseBroadcaster>,
 }
 
 const DB_URL_KEY: &str = "DATABASE_URL";
@@ -57,21 +59,21 @@ async fn main() -> std::io::Result<()> {
 
     let sse_emitter = SseBroadcaster::create();
 
+
     let state: AppState = AppState {
         db: db.clone(),
         cache: cache.clone(),
-        sse_emitter:sse_emitter.clone()
+        sse_emitter: sse_emitter.clone(),
     };
 
 
-
-    HttpServer::new(move|| {
+    HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_origin_fn(|origin, _req_head| {
                 let origin = origin.as_bytes();
-                let allow= origin.ends_with(b".bluhabit.id");
+                let _ = origin.ends_with(b".bluhabit.id");
 
-                allow
+                true
             })
             .allowed_methods(vec!["GET", "POST", "PUT", "PATCH", "DELETE"])
             .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
@@ -105,8 +107,13 @@ async fn main() -> std::io::Result<()> {
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {
-    routes::user::user_handler(cfg);
-    routes::auth::auth_handler(cfg);
-    routes::index::index_handler(cfg);
-    routes::event_stream::event_stream_handler(cfg)
+    cfg.route("/", web::get().to(hello));
+    cfg
+        .service(
+            web::scope("/v1")
+                .route("/event/subscribe", web::get().to(routes::event_stream::register_event))
+                .route("/event/send", web::post().to(routes::event_stream::send))
+                .route("/event/broadcast", web::post().to(routes::event_stream::broadcast))
+        );
 }
+

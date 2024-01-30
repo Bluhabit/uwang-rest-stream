@@ -4,4 +4,4 @@ pub mod utils;
 pub mod custom_error;
 pub mod redis_ext;
 pub mod sse;
-pub mod otp_generator;
+pub mod constant;

@@ -1,11 +1,11 @@
-use std::future::{ready, Ready};
+use std::future::{Ready, ready};
 
-use actix_web::{FromRequest, http, HttpRequest};
+use actix_web::{FromRequest, HttpRequest};
 use actix_web::dev::Payload;
+use sea_orm::prelude::async_trait::async_trait;
 
-use migration::async_trait::async_trait;
-
-use crate::{common, common::response::ErrorResponse};
+use crate::common;
+use crate::common::response::ErrorResponse;
 
 pub struct JwtMiddleware {
     pub session_id: String,
@@ -23,7 +23,7 @@ impl FromRequest for JwtMiddleware {
             .map(|c| c.value().to_string())
             .or_else(|| {
                 req.headers()
-                    .get(http::header::AUTHORIZATION)
+                    .get(actix_web::http::header::AUTHORIZATION)
                     .map(|h| h.to_str().unwrap().split_at(7).1.to_string())
             });
 
